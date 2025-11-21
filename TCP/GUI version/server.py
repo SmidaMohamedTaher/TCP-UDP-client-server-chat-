@@ -14,9 +14,14 @@ print(f"Server listening on {host}:{port}")
 
 
 def create_client_window(conn, addr):
-   
+
+    try:
+        client_name = conn.recv(1024).decode()
+    except:
+        client_name = str(addr)
+
     window = tk.Toplevel()
-    window.title(f"Client {addr}")
+    window.title(f"Client {client_name}")
     window.geometry("400x500")
 
     chat_box = scrolledtext.ScrolledText(window, state='disabled', wrap=tk.WORD) # the box of each massege
@@ -31,7 +36,7 @@ def create_client_window(conn, addr):
         chat_box.config(state='disabled')
         chat_box.yview(tk.END)
 
-    # Thread لاستقبال الرسائل من العميل
+  
     def receive():
         while True:
             try:
@@ -46,7 +51,7 @@ def create_client_window(conn, addr):
                 append_message("Client disconnected unexpectedly")
                 break
 
-    # دالة لإرسال الرسائل من السيرفر للعميل
+  
     def send_message(event=None):
         msg = message_entry.get()
         if msg.strip() != "":
@@ -66,14 +71,14 @@ def create_client_window(conn, addr):
 
     threading.Thread(target=receive, daemon=True).start()
 
-# ===== Thread لقبول العملاء =====
+
 def accept_clients():
     while True:
         conn, addr = server.accept()
         print(f"New client connected: {addr}")
         create_client_window(conn, addr)
 
-# ===== واجهة السيرفر الرئيسية =====
+
 root = tk.Tk()
 root.title("Server Chat")
 root.geometry("300x100")
