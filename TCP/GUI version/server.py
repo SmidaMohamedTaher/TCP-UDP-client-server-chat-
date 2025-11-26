@@ -4,14 +4,6 @@ import tkinter as tk
 from tkinter import scrolledtext
 
 
-host = "127.0.0.1"
-port = 12345
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
-server.listen(5)
-print(f"Server listening on {host}:{port}")
-
 
 def create_client_window(conn, addr):
 
@@ -78,6 +70,16 @@ def accept_clients():
         print(f"New client connected: {addr}")
         create_client_window(conn, addr)
 
+
+##============================ Main ======================
+
+host = "127.0.0.1"
+port = 12345
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((host, port))
+server.listen(5)
+print(f"Server listening on {host}:{port}")
 
 root = tk.Tk()
 root.title("Server Chat")

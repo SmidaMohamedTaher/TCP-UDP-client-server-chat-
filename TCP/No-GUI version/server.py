@@ -42,7 +42,7 @@ def clientCon(conn,addr):
 
 
 # ============Main part ===============
-host = "127.0.0.1"
+host = "10.253.169.155"
 port = 12345
 
 server = sk.socket(sk.AF_INET,sk.SOCK_STREAM)
