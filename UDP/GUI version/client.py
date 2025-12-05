@@ -5,10 +5,13 @@ from tkinter import scrolledtext
 import time 
 
 server_addr = ("127.0.0.1", 12345)
+#########################################################
 sended_message = 0
 loss_massage = 0
 timeout = 2
 start = 0
+conter = 0
+#########################################################
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(timeout)
 client_name = input("Enter your name: ")
@@ -31,19 +34,25 @@ def append_message(msg):
     chat_box.yview(tk.END)
 
 def receive():
+    global start
+    global conter
     while True:
         try:
             msg, _ = client.recvfrom(1024)
             msg = msg.decode()
-            if msg.lower() == "exit":
-                msg = "you are not connected with the server \n if you want to reconnect , enter your name"
-            elif msg == "ok[massege]":
+            if msg == "ok[massege]":
                 end = time.time()
                 print(f"the Latency = {(end-start)*1000} ms")
-                continue
-            append_message("[SERVER] " + msg)
+            else:
+                if conter:
+                    loss_massage += 1
+                if msg.lower() == "exit":
+                    msg = "you are not connected with the server \n if you want to reconnect , enter your name"
+                append_message("[SERVER] " + msg)  
+            #################################################################
         except socket.timeout:
-            # print("Request timed out")
+            if conter :
+                conter -= 1
             continue
            
 
@@ -51,6 +60,7 @@ def send_message(event=None):
     global sended_message
     global loss_massage
     global start
+    global conter
     msg = message_entry.get()
     if msg.strip() != "":
         start = time.time()
@@ -59,18 +69,7 @@ def send_message(event=None):
         append_message("[YOU] " + msg)
         message_entry.delete(0, tk.END)
         ###########################################################
-        # try :
-        #     msg2, _ = client.recvfrom(1024)
-        #     msg2 = msg2.decode()
-        #     if msg2 == "ok":
-        #         end = time.time()
-        #         print(f"the Latency = {(end-start)*1000} ms")
-        #     else:
-        #         print("Request timed out")
-        #         loss_massage += 1
-        # except socket.timeout:
-        #     print("Request timed out")
-        #     loss_massage += 1
+        conter = 0
         ############################################################
         if msg.lower() == "exit":
             print(f"Packet Loss average = {(loss_massage*100)/sended_message}%")
