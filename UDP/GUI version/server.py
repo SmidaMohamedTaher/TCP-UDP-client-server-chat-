@@ -47,7 +47,7 @@ def create_client_window(client_addr, client_name):
 def receive_messages():
     while True:
         msg, addr = server.recvfrom(1024)
-
+        server.sendto("ok[massege]".encode(), addr)
         msg = msg.decode()
 
         if addr not in clients:

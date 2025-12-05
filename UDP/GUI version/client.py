@@ -2,11 +2,15 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import scrolledtext
+import time 
 
 server_addr = ("127.0.0.1", 12345)
-
+sended_message = 0
+loss_massage = 0
+timeout = 2
+start = 0
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
+client.settimeout(timeout)
 client_name = input("Enter your name: ")
 client.sendto(client_name.encode(), server_addr)
 
@@ -28,19 +32,48 @@ def append_message(msg):
 
 def receive():
     while True:
-        msg, _ = client.recvfrom(1024)
-        msg = msg.decode()
-        if msg.lower() == "exit":
-            msg = "you are not connected with the server \n if you want to reconnect , enter your name"
-        append_message("[SERVER] " + msg)
+        try:
+            msg, _ = client.recvfrom(1024)
+            msg = msg.decode()
+            if msg.lower() == "exit":
+                msg = "you are not connected with the server \n if you want to reconnect , enter your name"
+            elif msg == "ok[massege]":
+                end = time.time()
+                print(f"the Latency = {(end-start)*1000} ms")
+                continue
+            append_message("[SERVER] " + msg)
+        except socket.timeout:
+            # print("Request timed out")
+            continue
+           
 
 def send_message(event=None):
+    global sended_message
+    global loss_massage
+    global start
     msg = message_entry.get()
     if msg.strip() != "":
+        start = time.time()
         client.sendto(msg.encode(), server_addr)
+        sended_message += 1 
         append_message("[YOU] " + msg)
         message_entry.delete(0, tk.END)
+        ###########################################################
+        # try :
+        #     msg2, _ = client.recvfrom(1024)
+        #     msg2 = msg2.decode()
+        #     if msg2 == "ok":
+        #         end = time.time()
+        #         print(f"the Latency = {(end-start)*1000} ms")
+        #     else:
+        #         print("Request timed out")
+        #         loss_massage += 1
+        # except socket.timeout:
+        #     print("Request timed out")
+        #     loss_massage += 1
+        ############################################################
         if msg.lower() == "exit":
+            print(f"Packet Loss average = {(loss_massage*100)/sended_message}%")
             root.quit()
 
 send_button = tk.Button(root, text="Send", command=send_message)
