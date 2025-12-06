@@ -7,7 +7,7 @@ import time
 server_addr = ("127.0.0.1", 12345)
 #########################################################
 sended_message = 0
-loss_massage = 0
+acsept_massage = 0
 timeout = 2
 start = 0
 conter = 0
@@ -36,31 +36,27 @@ def append_message(msg):
 def receive():
     global start
     global conter
+    global acsept_massage
     while True:
         try:
             msg, _ = client.recvfrom(1024)
             msg = msg.decode()
             if msg == "ok[massege]":
                 end = time.time()
+                acsept_massage += 1
                 print(f"the Latency = {(end-start)*1000} ms")
             else:
-                if conter:
-                    loss_massage += 1
                 if msg.lower() == "exit":
                     msg = "you are not connected with the server \n if you want to reconnect , enter your name"
                 append_message("[SERVER] " + msg)  
             #################################################################
         except socket.timeout:
-            if conter :
-                conter -= 1
             continue
            
 
 def send_message(event=None):
     global sended_message
-    global loss_massage
     global start
-    global conter
     msg = message_entry.get()
     if msg.strip() != "":
         start = time.time()
@@ -69,10 +65,9 @@ def send_message(event=None):
         append_message("[YOU] " + msg)
         message_entry.delete(0, tk.END)
         ###########################################################
-        conter = 0
         ############################################################
         if msg.lower() == "exit":
-            print(f"Packet Loss average = {(loss_massage*100)/sended_message}%")
+            print(f"Packet Loss average = {((sended_message - acsept_massage)*100)/sended_message}%")
             root.quit()
 
 send_button = tk.Button(root, text="Send", command=send_message)
