@@ -6,11 +6,10 @@ import time
 
 server_addr = ("127.0.0.1", 12345)
 #########################################################
-sended_message = 0
+sended_message = 1
 acsept_massage = 0
 timeout = 2
 start = 0
-conter = 0
 #########################################################
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(timeout)
@@ -35,7 +34,6 @@ def append_message(msg):
 
 def receive():
     global start
-    global conter
     global acsept_massage
     while True:
         try:
@@ -56,6 +54,7 @@ def receive():
 
 def send_message(event=None):
     global sended_message
+    global acsept_massage
     global start
     msg = message_entry.get()
     if msg.strip() != "":
@@ -67,7 +66,8 @@ def send_message(event=None):
         ###########################################################
         ############################################################
         if msg.lower() == "exit":
-            print(f"Packet Loss average = {((sended_message - acsept_massage)*100)/sended_message}%")
+            print(f"value 1 = {sended_message}\n value 2 = {acsept_massage}")
+            print(f"Packet Loss average = {(((sended_message) - acsept_massage)*100)/sended_message}%")
             root.quit()
 
 send_button = tk.Button(root, text="Send", command=send_message)
