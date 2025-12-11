@@ -4,11 +4,12 @@ import tkinter as tk
 from tkinter import scrolledtext
 import time 
 
-server_addr = ("127.0.0.1", 12345)
+server_addr = ("192.168.104.89", 12345)
 #########################################################
 sended_message = 1
 acsept_massage = 0
 timeout = 2
+insend = True
 start = 0
 #########################################################
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -35,22 +36,45 @@ def append_message(msg):
 def receive():
     global start
     global acsept_massage
+    global insend
     while True:
-        try:
-            msg, _ = client.recvfrom(1024)
-            msg = msg.decode()
-            if msg == "ok[massege]":
-                end = time.time()
-                acsept_massage += 1
-                print(f"the Latency = {(end-start)*1000} ms")
-            else:
+        if insend :
+            try:
+                msg, _ = client.recvfrom(1024)
+                msg = msg.decode()
+                
                 if msg.lower() == "exit":
                     msg = "you are not connected with the server \n if you want to reconnect , enter your name"
                 append_message("[SERVER] " + msg)  
-            #################################################################
+        
+            except socket.timeout:
+                continue
+
+def sendR(massege):
+    global insend
+    client.sendto(massege.encode(), server_addr)
+    insend = False
+    i = 0
+    while (True) :
+        i += 1
+        try:
+                msg, _ = client.recvfrom(1024)
+                msg = msg.decode()
+                if msg == "ok[massege]":
+                    end = time.time()
+                    acsept_massage += 1
+                    print(f"the Latency = {(end-start)*1000} ms")
+                    break
+                else :
+                    i -= 1
         except socket.timeout:
-            continue
-           
+            if i <= 3 :
+                client.sendto(massege.encode(), server_addr)
+            else :
+                insend = True
+                return False
+    insend = True 
+    return True
 
 def send_message(event=None):
     global sended_message
@@ -59,10 +83,12 @@ def send_message(event=None):
     msg = message_entry.get()
     if msg.strip() != "":
         start = time.time()
-        client.sendto(msg.encode(), server_addr)
         sended_message += 1 
         append_message("[YOU] " + msg)
         message_entry.delete(0, tk.END)
+        out = sendR(msg)
+        if not out :
+            append_message("[SERVER] connection is loss \n\t chack your network and try again")  
         ###########################################################
         ############################################################
         if msg.lower() == "exit":
