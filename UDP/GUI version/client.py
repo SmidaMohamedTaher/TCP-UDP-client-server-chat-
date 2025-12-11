@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 import time 
 
-server_addr = ("192.168.104.89", 12345)
+server_addr = ("127.0.0.1", 12345)
 #########################################################
 sended_message = 1
 acsept_massage = 0
@@ -41,8 +41,10 @@ def receive():
         if insend :
             try:
                 msg, _ = client.recvfrom(1024)
+                client.sendto("ok[massege]".encode(), server_addr)
                 msg = msg.decode()
-                
+                if msg == "ok[massege]":
+                    continue
                 if msg.lower() == "exit":
                     msg = "you are not connected with the server \n if you want to reconnect , enter your name"
                 append_message("[SERVER] " + msg)  
@@ -52,6 +54,8 @@ def receive():
 
 def sendR(massege):
     global insend
+    global acsept_massage
+    global start
     client.sendto(massege.encode(), server_addr)
     insend = False
     i = 0
@@ -72,9 +76,11 @@ def sendR(massege):
                 client.sendto(massege.encode(), server_addr)
             else :
                 insend = True
-                return False
+                out = False
     insend = True 
-    return True
+    out =  True
+    if not out :
+        append_message("[SERVER] connection is loss \n\t check your network and try again")
 
 def send_message(event=None):
     global sended_message
@@ -83,12 +89,10 @@ def send_message(event=None):
     msg = message_entry.get()
     if msg.strip() != "":
         start = time.time()
-        sended_message += 1 
+        sended_message += 1
         append_message("[YOU] " + msg)
         message_entry.delete(0, tk.END)
-        out = sendR(msg)
-        if not out :
-            append_message("[SERVER] connection is loss \n\t chack your network and try again")  
+        threading.Thread(target=sendR, args=(msg,), daemon=True).start()
         ###########################################################
         ############################################################
         if msg.lower() == "exit":

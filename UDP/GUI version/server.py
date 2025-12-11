@@ -2,6 +2,7 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import scrolledtext
+import time
 
 clients = {}  
 
@@ -23,16 +24,32 @@ def create_client_window(client_addr, client_name):
         chat_box.config(state='disabled')
         chat_box.yview(tk.END)
         
+    def sendR(message, client_addr):
+        attempts = 0
+        clients[client_addr]["ack"] = False 
+
+        while attempts < 3:
+            server.sendto(message.encode(), client_addr)
+            attempts += 1
+            for _ in range(10):
+                if clients[client_addr]["ack"]:
+                    return True
+                time.sleep(0.1)
+
+        return False
 
     def send_message(event=None):
         msg = message_entry.get()
         if msg.strip() != "":
-            server.sendto(msg.encode(), client_addr)
             append_message(f"[YOU] {msg}")
             message_entry.delete(0, tk.END)
-            if msg.lower() == "exit":
-                window.destroy()
-                del clients[client_addr]
+            out = sendR(msg,client_addr)
+            if not out :
+                append_message("[Client] there is a problem connecting with the client")
+            else :
+                if msg.lower() == "exit":
+                    window.destroy()
+                    del clients[client_addr]
 
     send_button = tk.Button(window, text="Send", command=send_message)
     send_button.pack(padx=10, pady=10, side=tk.RIGHT)
@@ -47,20 +64,32 @@ def create_client_window(client_addr, client_name):
 def receive_messages():
     while True:
         msg, addr = server.recvfrom(1024)
-        server.sendto("ok[massege]".encode(), addr)
         msg = msg.decode()
 
+        if msg == "ok[massege]":
+            if addr in clients:
+                clients[addr]["ack"] = True
+            continue
+
+        
+        server.sendto("ok[massege]".encode(), addr)
+
+        
         if addr not in clients:
             clients[addr] = {
                 "name": msg,
-                "append": create_client_window(addr, msg)
+                "append": create_client_window(addr, msg),
+                "ack": False
             }
             continue
 
+       
         append = clients[addr]["append"]
-        if msg.lower() == "exit" :
-            msg = "Client disconnected"
+        if msg.lower() == "exit":
+            append("[CLIENT] Client disconnected")
             del clients[addr]
+            continue
+
         append(f"[CLIENT] {msg}")
 
 
@@ -82,3 +111,4 @@ label.pack(padx=10, pady=10)
 threading.Thread(target=receive_messages, daemon=True).start()
 
 root.mainloop()
+
