@@ -4,30 +4,27 @@ import tkinter as tk
 from tkinter import scrolledtext
 import ssl
 
-## s er ver
 def create_client_window(conn, addr):
-
     try:
         client_name = conn.recv(1024).decode()
     except:
         client_name = str(addr)
-
+    
     window = tk.Toplevel()
     window.title(f"Client {client_name}")
     window.geometry("400x500")
-
-    chat_box = scrolledtext.ScrolledText(window, state='disabled', wrap=tk.WORD) # the box of each massege
+    
+    chat_box = scrolledtext.ScrolledText(window, state='disabled', wrap=tk.WORD)
     chat_box.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-
+    
     message_entry = tk.Entry(window)
     message_entry.pack(padx=10, pady=10, side=tk.LEFT, fill=tk.X, expand=True)
-
+    
     def append_message(msg):
         chat_box.config(state='normal')
         chat_box.insert(tk.END, msg + "\n")
         chat_box.config(state='disabled')
         chat_box.yview(tk.END)
-
   
     def receive():
         while True:
@@ -42,7 +39,6 @@ def create_client_window(conn, addr):
             except:
                 append_message("Client disconnected unexpectedly")
                 break
-
   
     def send_message(event=None):
         msg = message_entry.get()
@@ -56,36 +52,39 @@ def create_client_window(conn, addr):
             if msg.lower() == "exit":
                 conn.close()
                 window.destroy()
-
+    
     send_button = tk.Button(window, text="Send", command=send_message)
     send_button.pack(padx=10, pady=10, side=tk.RIGHT)
-    message_entry.bind("<Return>", send_message)# in the case of user using the enter key the app send the massege
-
+    
+    message_entry.bind("<Return>", send_message)
+    
     threading.Thread(target=receive, daemon=True).start()
-
 
 def accept_clients():
     while True:
-        conn, addr = server.accept()
+        conn, addr = server_socket.accept()
         print(f"New client connected: {addr}")
-        create_client_window(conn, addr)
-
+        
+    
+        try:
+            secure_conn = t.wrap_socket(conn, server_side=True)
+            print(f"ssl handshake successful with {addr}")
+            create_client_window(secure_conn, addr)
+        except ssl.SSLError as e:
+            print(f"ssl handshake failed: {e}")
+            conn.close()
 
 ##============================ Main ======================
-
-host = "127.0.0.1"
+host = "192.168.100.10"
 port = 12345
 
-# ssl work
+# ssl
+t = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER) 
+t.load_cert_chain('server.crt', 'server.key') 
 
-context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER) 
-
-# choose a key and server crt
-context.load_cert_chain('server.crt', 'server.key') 
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
-server.listen(5)
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((host, port))
+server_socket.listen(5)
 print(f"Server listening on {host}:{port}")
 
 root = tk.Tk()

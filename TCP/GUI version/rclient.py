@@ -4,22 +4,29 @@ import socket
 import threading
 import ssl
 
-# cl ient
+# ssl
 
-context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+t = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+t.verify_mode = ssl.CERT_REQUIRED
+t.check_hostname = True
+t.load_verify_locations('server.crt')  
 
-context.load_verify_locations('ca.crt') 
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 try:
-    client.connect(("127.0.0.1", 12345))
-except:
-    print("Cannot connect to server")
+   
+    client_socket.connect(("127.0.0.1", 12345))
+    
+   
+    client = t.wrap_socket(client_socket, server_hostname="127.0.0.1")
+    print("ssl connection established")
+except Exception as e:
+    print(f"Cannot connect to server: {e}")
     exit()
 
 client_name = input("Enter your name: ")
 client.send(client_name.encode())
-
 
 root = tk.Tk()
 root.title(f"{client_name}")
@@ -30,7 +37,6 @@ chat_box.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
 message_entry = tk.Entry(root, width=30)
 message_entry.pack(padx=10, pady=10, side=tk.LEFT, fill=tk.X, expand=True)
-
 
 def append_message(msg):
     chat_box.config(state='normal')
@@ -62,7 +68,6 @@ send_button = tk.Button(root, text="send", command=send_message)
 send_button.pack(padx=10, pady=10, side=tk.RIGHT)
 
 message_entry.bind("<Return>", send_message)
-
 
 threading.Thread(target=receive, daemon=True).start()
 
